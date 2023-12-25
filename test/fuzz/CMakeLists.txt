@@ -32,9 +32,9 @@ foreach(FUZZER ${FUZZERS})
     endif()
 
     if(NOT DEFINED BUILD_SHARED_LIBS)
-        target_link_libraries(${FUZZER} zlibstatic)
+        target_link_libraries(${FUZZER} zlibng_zlibstatic)
     else()
-        target_link_libraries(${FUZZER} zlib)
+        target_link_libraries(${FUZZER} zlibng_zlib)
     endif()
 
     if(FUZZING_ENGINE_FOUND)
