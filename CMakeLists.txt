@@ -1070,12 +1070,12 @@ else()
 endif()
 
 # Alias target
-add_library(ZLIB::zlib ALIAS zlibng_zlib)
+add_library(zlib::zlib ALIAS zlibng_zlib)
 set_target_properties(zlibng_zlib PROPERTIES EXPORT_NAME "zlib")
 if(NOT DEFINED BUILD_SHARED_LIBS)
-    add_library(ZLIB::zlibstatic ALIAS zlibng_zlibstatic)
+    add_library(zlib::zlibstatic ALIAS zlibng_zlibstatic)
 elseif(NOT BUILD_SHARED_LIBS)
-    add_library(ZLIB::zlibstatic ALIAS zlibng_zlib)
+    add_library(zlib::zlibstatic ALIAS zlibng_zlib)
 endif()
 set_target_properties(zlibng_zlibstatic PROPERTIES EXPORT_NAME "zlibstatic")
 
