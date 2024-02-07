@@ -1054,11 +1054,15 @@ endif()
 
 if(NOT DEFINED BUILD_SHARED_LIBS)
     add_library(zlibng.zlib SHARED ${ZLIB_ALL_SRCS} ${ZLIB_DLL_SRCS})
+    set_target_properties(zlibng.zlib PROPERTIES EXPORT_NAME "zlib")
+
     add_library(zlibng.zlibstatic STATIC ${ZLIB_ALL_SRCS})
+    set_target_properties(zlibng.zlibstatic PROPERTIES EXPORT_NAME "zlibstatic")
 
     set(ZLIB_INSTALL_LIBRARIES zlibng.zlib zlibng.zlibstatic)
 else()
     add_library(zlibng.zlib ${ZLIB_ALL_SRCS})
+    set_target_properties(zlibng.zlib PROPERTIES EXPORT_NAME "zlib")
 
     if(BUILD_SHARED_LIBS)
         target_sources(zlibng.zlib PRIVATE ${ZLIB_DLL_SRCS})
@@ -1071,13 +1075,11 @@ endif()
 
 # Alias target
 add_library(zlib::zlib ALIAS zlibng.zlib)
-set_target_properties(zlibng.zlib PROPERTIES EXPORT_NAME "zlib")
 if(NOT DEFINED BUILD_SHARED_LIBS)
     add_library(zlib::zlibstatic ALIAS zlibng.zlibstatic)
 elseif(NOT BUILD_SHARED_LIBS)
     add_library(zlib::zlibstatic ALIAS zlibng.zlib)
 endif()
-set_target_properties(zlibng.zlibstatic PROPERTIES EXPORT_NAME "zlibstatic")
 
 foreach(ZLIB_INSTALL_LIBRARY ${ZLIB_INSTALL_LIBRARIES})
     if(NOT ZLIB_COMPAT)
