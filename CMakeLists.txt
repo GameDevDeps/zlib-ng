@@ -1052,34 +1052,28 @@ if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
     set(ZLIB_DLL_SRCS win32/zlib${SUFFIX}1.rc)
 endif()
 
-if(NOT DEFINED BUILD_SHARED_LIBS)
-    add_library(zlibng.zlib SHARED ${ZLIB_ALL_SRCS} ${ZLIB_DLL_SRCS})
-    set_target_properties(zlibng.zlib PROPERTIES EXPORT_NAME "zlib")
+#if(NOT DEFINED BUILD_SHARED_LIBS)
+#    add_library(zlib SHARED ${ZLIB_ALL_SRCS} ${ZLIB_DLL_SRCS})
+#    add_library(zlibstatic STATIC ${ZLIB_ALL_SRCS})
+#
+#    set(ZLIB_INSTALL_LIBRARIES zlib zlibstatic)
+#else()
+#    add_library(zlib ${ZLIB_ALL_SRCS})
+#
+#    if(BUILD_SHARED_LIBS)
+#        target_sources(zlib PRIVATE ${ZLIB_DLL_SRCS})
+#    else()
+#        add_library(zlibstatic ALIAS zlib)
+#    endif()
+#
+#    set(ZLIB_INSTALL_LIBRARIES zlib)
+#endif()
 
-    add_library(zlibng.zlibstatic STATIC ${ZLIB_ALL_SRCS})
-    set_target_properties(zlibng.zlibstatic PROPERTIES EXPORT_NAME "zlibstatic")
-
-    set(ZLIB_INSTALL_LIBRARIES zlibng.zlib zlibng.zlibstatic)
-else()
-    add_library(zlibng.zlib ${ZLIB_ALL_SRCS})
-    set_target_properties(zlibng.zlib PROPERTIES EXPORT_NAME "zlib")
-
-    if(BUILD_SHARED_LIBS)
-        target_sources(zlibng.zlib PRIVATE ${ZLIB_DLL_SRCS})
-    else()
-        add_library(zlibng.zlibstatic ALIAS zlibng.zlib)
-    endif()
-
-    set(ZLIB_INSTALL_LIBRARIES zlibng.zlib)
-endif()
-
-# Alias target
+add_library(zlibng.zlib STATIC ${ZLIB_ALL_SRCS})
+set_target_properties(zlibng.zlib PROPERTIES EXPORT_NAME "zlib")
 add_library(zlib::zlib ALIAS zlibng.zlib)
-if(NOT DEFINED BUILD_SHARED_LIBS)
-    add_library(zlib::zlibstatic ALIAS zlibng.zlibstatic)
-elseif(NOT BUILD_SHARED_LIBS)
-    add_library(zlib::zlibstatic ALIAS zlibng.zlib)
-endif()
+
+set(ZLIB_INSTALL_LIBRARIES zlibng.zlib)
 
 foreach(ZLIB_INSTALL_LIBRARY ${ZLIB_INSTALL_LIBRARIES})
     if(NOT ZLIB_COMPAT)
@@ -1091,73 +1085,78 @@ foreach(ZLIB_INSTALL_LIBRARY ${ZLIB_INSTALL_LIBRARIES})
 endforeach()
 
 if(WIN32)
-    # Shared library
-    if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
+#    # Shared library
+#    if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
+#        set_target_properties(zlib PROPERTIES OUTPUT_NAME zlib${SUFFIX})
+#    endif()
+#    # Static library
+#    if(NOT DEFINED BUILD_SHARED_LIBS)
+#        if(MSVC)
+#            set_target_properties(zlibstatic PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
+#        else()
+#            set_target_properties(zlibstatic PROPERTIES OUTPUT_NAME z${SUFFIX})
+#        endif()
+#    elseif(NOT BUILD_SHARED_LIBS)
+#        if(MSVC)
+#            set_target_properties(zlib PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
+#        else()
+#            set_target_properties(zlib PROPERTIES OUTPUT_NAME z${SUFFIX})
+#        endif()
+#    endif()
+    if(MSVC)
         set_target_properties(zlibng.zlib PROPERTIES OUTPUT_NAME zlib${SUFFIX})
-    endif()
-    # Static library
-    if(NOT DEFINED BUILD_SHARED_LIBS)
-        if(MSVC)
-            set_target_properties(zlibng.zlibstatic PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
-        else()
-            set_target_properties(zlibng.zlibstatic PROPERTIES OUTPUT_NAME z${SUFFIX})
-        endif()
-    elseif(NOT BUILD_SHARED_LIBS)
-        if(MSVC)
-            set_target_properties(zlibng.zlib PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
-        else()
-            set_target_properties(zlibng.zlib PROPERTIES OUTPUT_NAME z${SUFFIX})
-        endif()
+    else()
+        set_target_properties(zlibng.zlib PROPERTIES OUTPUT_NAME z${SUFFIX})
     endif()
 else()
     # On unix-like platforms the library is almost always called libz
     set_target_properties(${ZLIB_INSTALL_LIBRARIES} PROPERTIES OUTPUT_NAME z${SUFFIX})
 endif()
 
-if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
-    set_target_properties(zlibng.zlib PROPERTIES DEFINE_SYMBOL ZLIB_DLL)
-
-    if(ZLIB_COMPAT)
-        set_target_properties(zlibng.zlib PROPERTIES SOVERSION 1)
-    else()
-        set_target_properties(zlibng.zlib PROPERTIES SOVERSION 2)
-    endif()
-
-    if(NOT CYGWIN)
-        # This property causes shared libraries on Linux to have the full version
-        # encoded into their final filename.  We disable this on Cygwin because
-        # it causes cygz-${ZLIB_FULL_VERSION}.dll to be created when cygz.dll
-        # seems to be the default.
-        #
-        # This has no effect with MSVC, on that platform the version info for
-        # the DLL comes from the resource file win32/zlib1.rc
-        set_target_properties(zlibng.zlib PROPERTIES VERSION ${ZLIB_FULL_VERSION})
-    endif()
-
-    if(UNIX)
-        if(HAVE_NO_INTERPOSITION)
-            set_target_properties(zlibng.zlib PROPERTIES COMPILE_FLAGS "-fno-semantic-interposition")
-        endif()
-        if(NOT APPLE)
-            if(NOT ZLIB_COMPAT)
-                add_definitions(-DHAVE_SYMVER)
-            endif()
-            set_target_properties(zlibng.zlib PROPERTIES LINK_FLAGS
-                "-Wl,--version-script,\"${CMAKE_CURRENT_SOURCE_DIR}/zlib${SUFFIX}.map\"")
-        endif()
-    endif()
-    if(MSYS)
-        # Suppress version number from shared library name
-        set(CMAKE_SHARED_LIBRARY_NAME_WITH_VERSION 0)
-    elseif(WIN32)
-        # Creates zlib1.dll when building shared library version
-        if(ZLIB_COMPAT)
-            set_target_properties(zlibng.zlib PROPERTIES SUFFIX "1.dll")
-        else()
-            set_target_properties(zlibng.zlib PROPERTIES SUFFIX "2.dll")
-        endif()
-    endif()
-endif()
+#if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
+#    set_target_properties(zlib PROPERTIES DEFINE_SYMBOL ZLIB_DLL)
+#
+#    if(ZLIB_COMPAT)
+#        set_target_properties(zlib PROPERTIES SOVERSION 1)
+#    else()
+#        set_target_properties(zlib PROPERTIES SOVERSION 2)
+#    endif()
+#
+#    if(NOT CYGWIN)
+#        # This property causes shared libraries on Linux to have the full version
+#        # encoded into their final filename.  We disable this on Cygwin because
+#        # it causes cygz-${ZLIB_FULL_VERSION}.dll to be created when cygz.dll
+#        # seems to be the default.
+#        #
+#        # This has no effect with MSVC, on that platform the version info for
+#        # the DLL comes from the resource file win32/zlib1.rc
+#        set_target_properties(zlib PROPERTIES VERSION ${ZLIB_FULL_VERSION})
+#    endif()
+#
+#    if(UNIX)
+#        if(HAVE_NO_INTERPOSITION)
+#            set_target_properties(zlib PROPERTIES COMPILE_FLAGS "-fno-semantic-interposition")
+#        endif()
+#        if(NOT APPLE)
+#            if(NOT ZLIB_COMPAT)
+#                add_definitions(-DHAVE_SYMVER)
+#            endif()
+#            set_target_properties(zlib PROPERTIES LINK_FLAGS
+#                "-Wl,--version-script,\"${CMAKE_CURRENT_SOURCE_DIR}/zlib${SUFFIX}.map\"")
+#        endif()
+#    endif()
+#    if(MSYS)
+#        # Suppress version number from shared library name
+#        set(CMAKE_SHARED_LIBRARY_NAME_WITH_VERSION 0)
+#    elseif(WIN32)
+#        # Creates zlib1.dll when building shared library version
+#        if(ZLIB_COMPAT)
+#            set_target_properties(zlib PROPERTIES SUFFIX "1.dll")
+#        else()
+#            set_target_properties(zlib PROPERTIES SUFFIX "2.dll")
+#        endif()
+#    endif()
+#endif()
 
 if(HAVE_UNISTD_H)
   SET(ZCONF_UNISTD_LINE "#if 1    /* was set to #if 1 by configure/cmake/etc */")
@@ -1197,7 +1196,7 @@ endif()
 
 if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
     install(TARGETS ${ZLIB_INSTALL_LIBRARIES}
-        EXPORT zlib
+        EXPORT zlibng
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
@@ -1214,7 +1213,7 @@ if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL)
     install(FILES ${ZLIB_PC} DESTINATION "${PKGCONFIG_INSTALL_DIR}")
 endif()
 if(NOT SKIP_INSTALL_EXPORT AND NOT SKIP_INSTALL_ALL)
-    install(EXPORT zlib
+    install(EXPORT zlibng
         NAMESPACE zlib::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/zlib
         FILE zlib${ZLIB_HEADER_VERSION}.cmake)
